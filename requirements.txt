@@ -5,5 +5,5 @@ scikit-learn==1.4.2
 matplotlib
 seaborn
 gunicorn
-reportlab
+reportlab==4.2.0
 joblib
