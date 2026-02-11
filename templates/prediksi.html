@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Prediksi Kelulusan</title>
+
+  <link rel="icon" type="image/png" sizes="32x32"
+        href="{{ url_for('static', filename='images/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16"
+        href="{{ url_for('static', filename='images/favicon-16x16.png') }}">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    <!-- LOGOUT MODAL -->
+    <div
+      id="logoutModal"
+      class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50"
+    >
+      <div
+        id="logoutBox"
+        class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 transform scale-90 opacity-0 transition-all duration-300"
+      >
+        <h3 class="text-lg font-bold text-gray-700 mb-2 text-center">
+          Konfirmasi Logout
+        </h3>
+        <p class="text-sm text-gray-500 text-center mb-6">
+          Apakah Anda yakin ingin keluar dari sistem?
+        </p>
+        <div class="flex justify-center gap-4">
+          <button
+            onclick="closeLogoutModal()"
+            class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition"
+          >
+            Batal
+          </button>
+          <a
+            href="/logout"
+            class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+          >
+            Logout
+          </a>
+        </div>
+      </div>
+    </div>
+
+<!-- HEADER -->
+<header class="bg-white/80 backdrop-blur shadow sticky top-0 z-50">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+    <div>
+      <h1 class="text-lg font-bold text-blue-600">
+        Sistem Prediksi Kelulusan SMK
+      </h1>
+      <p class="text-xs text-gray-500">Random Forest • Prediksi</p>
+    </div>
+
+    <nav class="flex items-center space-x-6">
+                <span class="text-sm text-gray-600">
+            👤 {{ user }}
+            <span class="text-xs text-blue-600 font-semibold">(Admin)</span>
+          </span>
+
+      <a href="/dashboard"
+         class="text-sm text-gray-600 hover:text-blue-600 transition">
+        Dashboard
+      </a>
+
+      <a href="/analisis"
+         class="text-sm text-gray-600 hover:text-blue-600 transition">
+        Analisis
+      </a>
+
+      <a href="/prediksi"
+         class="text-sm text-blue-700 font-semibold
+                after:content-[''] after:absolute after:left-0 after:-bottom-1
+                after:h-[2px] after:w-full after:bg-blue-600 relative">
+        Prediksi
+      </a>
+      <a
+        href="/hasil-prediksi"
+        class="text-sm text-gray-600 hover:text-blue-600 transition">
+        Hasil
+      </a>
+
+      <a href="/about"
+         class="text-sm text-gray-600 hover:text-blue-600 transition">
+        About
+      </a>
+
+          <button
+            onclick="openLogoutModal()"
+            class="text-sm text-red-500 hover:text-red-700 transition font-medium"
+          >
+            Logout
+          </button>
+    </nav>
+  </div>
+</header>
+
+<!-- CONTENT -->
+<main class="max-w-3xl mx-auto px-6 py-10">
+
+  <h2 class="text-2xl font-bold text-gray-700 mb-2 text-center">
+    Prediksi Kelulusan Siswa
+  </h2>
+  <p class="text-center text-sm text-gray-500 mb-8">
+    Halaman ini digunakan untuk memprediksi kelulusan siswa
+    berdasarkan data akademik dan non-akademik menggunakan
+    model Random Forest.
+  </p>
+
+  <!-- FORM -->
+  <div class="bg-white rounded-xl shadow p-8">
+
+    <form method="POST" class="space-y-5">
+
+      <!-- RATA-RATA -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700">
+          Nilai Rata-rata
+        </label>
+        <input type="number" step="0.01" name="rata"
+               value="{{ request.form.get('rata','') }}"
+               class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200"
+               required>
+        <p class="text-xs text-gray-500 mt-1">
+          Rata-rata nilai akademik siswa dari seluruh mata pelajaran.
+        </p>
+      </div>
+
+      <!-- UKK -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700">
+          Nilai UKK
+        </label>
+        <input type="number" step="0.01" name="ukk"
+               value="{{ request.form.get('ukk','') }}"
+               class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200"
+               required>
+        <p class="text-xs text-gray-500 mt-1">
+          Nilai Uji Kompetensi Keahlian sesuai jurusan siswa.
+        </p>
+      </div>
+
+      <!-- PRAKERIN -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700">
+          Nilai Prakerin
+        </label>
+        <input type="number" step="0.01" name="prakerin"
+               value="{{ request.form.get('prakerin','') }}"
+               class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200"
+               required>
+        <p class="text-xs text-gray-500 mt-1">
+          Nilai praktik kerja industri yang diperoleh siswa.
+        </p>
+      </div>
+
+      <!-- KEHADIRAN -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700">
+          Persentase Kehadiran (%)
+        </label>
+        <input type="number" name="kehadiran"
+               value="{{ request.form.get('kehadiran','') }}"
+               class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200"
+               required>
+        <p class="text-xs text-gray-500 mt-1">
+          Persentase kehadiran siswa selama masa pembelajaran.
+        </p>
+      </div>
+
+      <!-- SIKAP -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700">
+          Sikap
+        </label>
+        <select name="sikap"
+                class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200"
+                required>
+          <option value="">-- Pilih Sikap --</option>
+          <option value="4" {% if request.form.get('sikap')=='4' %}selected{% endif %}>Sangat Baik</option>
+          <option value="3" {% if request.form.get('sikap')=='3' %}selected{% endif %}>Baik</option>
+          <option value="2" {% if request.form.get('sikap')=='2' %}selected{% endif %}>Cukup</option>
+          <option value="1" {% if request.form.get('sikap')=='1' %}selected{% endif %}>Kurang</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">
+          Penilaian sikap siswa berdasarkan observasi guru.
+        </p>
+      </div>
+
+      <!-- ADMIN -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700">
+          Status Pembayaran Administrasi
+        </label>
+        <select name="admin"
+                class="w-full mt-1 px-4 py-2 border rounded-lg focus:ring focus:ring-blue-200"
+                required>
+          <option value="">-- Pilih Status --</option>
+          <option value="1" {% if request.form.get('admin')=='1' %}selected{% endif %}>Lunas</option>
+          <option value="0" {% if request.form.get('admin')=='0' %}selected{% endif %}>Belum</option>
+        </select>
+        <p class="text-xs text-gray-500 mt-1">
+          Menunjukkan status pelunasan administrasi sekolah siswa.
+        </p>
+      </div>
+
+      <!-- BUTTON -->
+      <div class="flex gap-4 pt-4">
+        <button type="submit"
+                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow">
+          🔮 Prediksi
+        </button>
+
+        <button type="button"
+                onclick="resetForm()"
+                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg shadow">
+          🔄 Reset
+        </button>
+      </div>
+    </form>
+
+    <!-- HASIL -->
+{% if hasil is not none %}
+  {% if hasil == 1 %}
+    <div class="mt-6 p-4 rounded-lg bg-green-100 text-green-800 text-center font-semibold">
+      ✅ HASIL PREDIKSI: LULUS
+      <p class="text-xs mt-2 font-normal">
+        Berdasarkan data yang dimasukkan, siswa diprediksi memenuhi
+        kriteria kelulusan.
+      </p>
+    </div>
+  {% else %}
+    <div class="mt-6 p-4 rounded-lg bg-red-100 text-red-800 text-center font-semibold">
+      ❌ HASIL PREDIKSI: TIDAK LULUS
+      <p class="text-xs mt-2 font-normal">
+        Berdasarkan data yang dimasukkan, siswa diprediksi belum
+        memenuhi kriteria kelulusan.
+      </p>
+    </div>
+  {% endif %}
+
+  <!-- INTERVENSI -->
+  <div class="mt-4 p-4 rounded-lg bg-yellow-100 text-yellow-800 text-center font-medium">
+    💡 REKOMENDASI INTERVENSI: {{ intervensi }}
+    <p class="text-xs mt-1 font-normal">
+      Intervensi ini dapat digunakan sekolah sebagai tindakan tindak lanjut.
+    </p>
+  </div>
+
+  <p class="text-xs text-gray-600 mt-3 text-center">
+    Hasil prediksi ini merupakan rekomendasi berdasarkan pola data
+    historis menggunakan algoritma Random Forest dan bukan merupakan
+    keputusan mutlak.
+  </p>
+{% endif %}
+{% if hasil is not none %}
+<div class="flex flex-col md:flex-row justify-center gap-4 mt-6">
+  <!-- Tombol Halaman Hasil Prediksi -->
+  <a href="/hasil-prediksi"
+     class="flex-1 w-full text-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow">
+    📄 Lihat Halaman Hasil Prediksi
+  </a>
+</div>
+{% endif %}
+
+
+  </div>
+</main>
+
+<footer class="bg-white text-center text-sm text-gray-500 py-4 border-t">
+  By Alhadi Yunasfi © 2026 Sistem Prediksi Kelulusan SMK
+</footer>
+
+<script>
+function resetForm() {
+  document.querySelector("form").reset();
+  window.location.href = "/prediksi";
+}
+function openLogoutModal() {
+        const modal = document.getElementById("logoutModal");
+        const box = document.getElementById("logoutBox");
+        modal.classList.remove("hidden");
+        setTimeout(() => {
+          box.classList.remove("scale-90", "opacity-0");
+          box.classList.add("scale-100", "opacity-100");
+        }, 10);
+      }
+
+      function closeLogoutModal() {
+        const modal = document.getElementById("logoutModal");
+        const box = document.getElementById("logoutBox");
+        box.classList.add("scale-90", "opacity-0");
+        box.classList.remove("scale-100", "opacity-100");
+        setTimeout(() => modal.classList.add("hidden"), 300);
+      }
+</script>
+
+</body>
+</html>

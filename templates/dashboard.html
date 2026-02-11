@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard</title>
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="static/images/favicon-32x32.png"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="bg-gray-100 min-h-screen flex flex-col">
+    <!-- LOGOUT MODAL -->
+    <div
+      id="logoutModal"
+      class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50"
+    >
+      <div
+        id="logoutBox"
+        class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 transform scale-90 opacity-0 transition-all duration-300"
+      >
+        <h3 class="text-lg font-bold text-gray-700 mb-2 text-center">
+          Konfirmasi Logout
+        </h3>
+        <p class="text-sm text-gray-500 text-center mb-6">
+          Apakah Anda yakin ingin keluar dari sistem?
+        </p>
+        <div class="flex justify-center gap-4">
+          <button
+            onclick="closeLogoutModal()"
+            class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition"
+          >
+            Batal
+          </button>
+          <a
+            href="/logout"
+            class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+          >
+            Logout
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEADER (kembali seperti awal) -->
+    <header class="bg-white/80 backdrop-blur shadow sticky top-0 z-50">
+      <div
+        class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center"
+      >
+        <div>
+          <h1 class="text-lg font-bold text-blue-600">
+            Sistem Prediksi Kelulusan SMK
+          </h1>
+          <p class="text-xs text-gray-500">Random Forest • Dashboard Utama</p>
+        </div>
+
+        <nav class="flex items-center space-x-6">
+          <span class="text-sm text-gray-600">
+            👤 {{ user }}
+            <span class="text-xs text-blue-600 font-semibold"
+              >({{ role|capitalize }})</span
+            >
+          </span>
+
+          <a
+            href="/dashboard"
+            class="relative text-sm text-blue-700 font-semibold after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-blue-600"
+          >
+            Dashboard
+          </a>
+
+          <a
+            href="/analisis"
+            class="relative text-sm text-gray-600 hover:text-blue-600 transition"
+          >
+            Analisis
+          </a>
+          <a
+            href="/prediksi"
+            class="relative text-sm text-gray-600 hover:text-blue-600 transition"
+          >
+            Prediksi
+          </a>
+          <a
+            href="/hasil-prediksi"
+            class="text-sm text-gray-600 hover:text-blue-600 transition"
+          >
+            Hasil
+          </a>
+
+          <a
+            href="/about"
+            class="relative text-sm text-gray-600 hover:text-blue-600 transition"
+          >
+            About
+          </a>
+
+          <button
+            onclick="openLogoutModal()"
+            class="text-sm text-red-500 hover:text-red-700 transition font-medium"
+          >
+            Logout
+          </button>
+        </nav>
+      </div>
+    </header>
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div class="fixed top-6 right-6 z-50 space-y-2">
+      {% for category, message in messages %}
+      <div
+        class="px-4 py-2 rounded-lg shadow-lg {% if category == 'success' %}bg-green-500 text-white{% endif %} {% if category == 'warning' %}bg-yellow-400 text-black{% endif %} {% if category == 'danger' %}bg-red-500 text-white{% endif %} transition-opacity duration-300 opacity-100"
+        id="flashMessage{{ loop.index }}"
+      >
+        {{ message }}
+      </div>
+
+      <script>
+        setTimeout(() => {
+          const el = document.getElementById("flashMessage{{ loop.index }}");
+          if (el) el.classList.add("opacity-0");
+        }, 3000);
+      </script>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 max-w-2xl mx-auto px-6 py-20">
+      <h2 class="text-2xl font-bold text-gray-700 mb-8 text-center fade-up">
+        Dashboard Sistem Prediksi
+      </h2>
+
+      <!-- UPLOAD + ANALISIS BOX -->
+      <div class="bg-white rounded-xl shadow-xl p-8 text-center fade-up">
+        <p class="text-lg font-semibold text-blue-600 mb-4">
+          Upload Dataset Siswa
+        </p>
+        <p class="text-sm text-gray-500 mb-6">
+          Unggah file CSV untuk proses pelatihan model Random Forest
+        </p>
+
+        <!-- FORM UPLOAD -->
+        <form
+          id="uploadForm"
+          action="/upload-dataset"
+          method="POST"
+          enctype="multipart/form-data"
+          class="flex flex-col items-center gap-4"
+        >
+          <input
+            type="file"
+            name="dataset"
+            accept=".csv"
+            required
+            class="border p-2 rounded w-full max-w-sm"
+          />
+
+          <!-- UPLOAD BUTTON -->
+          <button
+            type="submit"
+            class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition w-full max-w-sm"
+          >
+            Upload
+          </button>
+
+          <!-- ANALISIS BUTTON -->
+          <button
+            type="button"
+            id="analisisBtn"
+            onclick="window.location.href = '/analisis'"
+            class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition w-full max-w-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            {%
+            if
+            not
+            session.dataset_uploaded
+            %}
+            disabled
+            {%
+            endif
+            %}
+          >
+            Analisis Model
+          </button>
+        </form>
+      </div>
+    </main>
+
+    <!-- TOAST NOTIF -->
+    <div
+      id="toast"
+      class="fixed top-6 right-6 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity z-50"
+    >
+      Dataset berhasil diunggah!
+    </div>
+
+    <!-- FOOTER MENEMPEL BAWAH -->
+    <footer
+      class="bg-white text-center text-sm text-gray-500 py-4 border-t mt-auto"
+    >
+      By Alhadi Yunasfi © 2026 Sistem Prediksi Kelulusan SMK
+    </footer>
+
+    <style>
+      .fade-up {
+        animation: fadeUp 0.8s ease-out both;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+
+    <script>
+      function openLogoutModal() {
+        const modal = document.getElementById("logoutModal");
+        const box = document.getElementById("logoutBox");
+        modal.classList.remove("hidden");
+        setTimeout(() => {
+          box.classList.remove("scale-90", "opacity-0");
+          box.classList.add("scale-100", "opacity-100");
+        }, 10);
+      }
+
+      function closeLogoutModal() {
+        const modal = document.getElementById("logoutModal");
+        const box = document.getElementById("logoutBox");
+        box.classList.add("scale-90", "opacity-0");
+        box.classList.remove("scale-100", "opacity-100");
+        setTimeout(() => modal.classList.add("hidden"), 300);
+      }
+
+      // NOTIF UPLOAD SUKSES
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("upload") === "success") {
+        const toast = document.getElementById("toast");
+        toast.classList.remove("opacity-0");
+        setTimeout(() => {
+          toast.classList.add("opacity-0");
+        }, 3000);
+      }
+    </script>
+  </body>
+</html>

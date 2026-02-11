@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hasil Prediksi</title>
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="{{ url_for('static', filename='images/favicon-32x32.png') }}"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @media print {
+        header,
+        footer,
+        nav,
+        button,
+        a {
+          display: none !important;
+        }
+
+        @page {
+          size: A4 landscape;
+          margin: 0.8cm;
+        }
+
+        main {
+          max-width: 100% !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+        .overflow-x-auto {
+          overflow: visible !important;
+        }
+
+        table {
+          width: 100% !important;
+          table-layout: fixed;
+          border-collapse: collapse;
+          font-size: 8px;
+        }
+
+        th,
+        td {
+          border: 1px solid #000;
+          padding: 2px;
+          word-wrap: break-word;
+          word-break: break-word;
+          white-space: normal !important;
+          text-align: center;
+        }
+
+        thead {
+          display: table-header-group;
+        }
+
+        th:nth-child(1),
+        td:nth-child(1) {
+          width: 4%;
+        }
+        th:nth-child(2),
+        td:nth-child(2) {
+          width: 6%;
+        }
+        th:nth-child(3),
+        td:nth-child(3) {
+          width: 6%;
+        }
+        th:nth-child(4),
+        td:nth-child(4) {
+          width: 6%;
+        }
+        th:nth-child(5),
+        td:nth-child(5) {
+          width: 7%;
+        }
+        th:nth-child(6),
+        td:nth-child(6) {
+          width: 5%;
+        }
+        th:nth-child(7),
+        td:nth-child(7) {
+          width: 8%;
+        }
+        th:nth-child(8),
+        td:nth-child(8) {
+          width: 6%;
+        }
+        th:nth-child(9),
+        td:nth-child(9) {
+          width: 30%;
+        }
+        th:nth-child(10),
+        td:nth-child(10) {
+          width: 12%;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="bg-gray-100 min-h-screen flex flex-col">
+    <!-- LOGOUT MODAL -->
+    <div
+      id="logoutModal"
+      class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50"
+    >
+      <div
+        id="logoutBox"
+        class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 transform scale-90 opacity-0 transition-all duration-300"
+      >
+        <h3 class="text-lg font-bold text-gray-700 mb-2 text-center">
+          Konfirmasi Logout
+        </h3>
+        <p class="text-sm text-gray-500 text-center mb-6">
+          Apakah Anda yakin ingin keluar dari sistem?
+        </p>
+        <div class="flex justify-center gap-4">
+          <button
+            onclick="closeLogoutModal()"
+            class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 transition"
+          >
+            Batal
+          </button>
+          <a
+            href="/logout"
+            class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+            >Logout</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="bg-white/80 backdrop-blur shadow sticky top-0 z-50">
+      <div
+        class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center"
+      >
+        <div>
+          <h1 class="text-lg font-bold text-blue-600">
+            Sistem Prediksi Kelulusan SMK
+          </h1>
+          <p class="text-xs text-gray-500">Random Forest • Hasil Prediksi</p>
+        </div>
+
+        <nav class="flex items-center space-x-6">
+          <span class="text-sm text-gray-600">
+            👤 {{ user }}
+            <span class="text-xs text-blue-600 font-semibold"
+              >({{ role|capitalize }})</span
+            >
+          </span>
+
+          {% if role == "admin" %}
+          <a
+            href="/dashboard"
+            class="text-sm text-gray-600 hover:text-blue-600 transition"
+            >Dashboard</a
+          >
+          <a
+            href="/analisis"
+            class="text-sm text-gray-600 hover:text-blue-600 transition"
+            >Analisis</a
+          >
+          <a
+            href="/prediksi"
+            class="text-sm text-gray-600 hover:text-blue-600 transition"
+            >Prediksi</a
+          >
+          {% endif %} {% if role == "user" %}
+          <a
+            href="/dashboard-user"
+            class="text-sm text-gray-600 hover:text-blue-600 transition"
+            >Dashboard</a
+          >
+          {% endif %}
+          <a
+            href="/hasil-prediksi"
+            class="text-sm text-blue-700 font-semibold relative after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:bg-blue-600"
+            >Hasil</a
+          >
+          <a
+            href="/about"
+            class="text-sm text-gray-600 hover:text-blue-600 transition"
+            >About</a
+          >
+
+          <button
+            onclick="openLogoutModal()"
+            class="text-sm text-red-500 hover:text-red-700 transition font-medium"
+          >
+            Logout
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 max-w-6xl mx-auto px-6 py-16">
+      <h2 class="text-2xl font-bold text-gray-700 mb-8 text-center">
+        Tabel Hasil Prediksi Kelulusan
+      </h2>
+
+      <div class="bg-white rounded-xl shadow-xl p-6 overflow-x-auto">
+        <table class="w-full border border-gray-200 text-sm">
+          <thead class="bg-blue-600 text-white">
+            <tr>
+              <th class="px-3 py-2 border">No</th>
+              <th class="px-3 py-2 border">Rata-rata</th>
+              <th class="px-3 py-2 border">UKK</th>
+              <th class="px-3 py-2 border">Prakerin</th>
+              <th class="px-3 py-2 border">Kehadiran (%)</th>
+              <th class="px-3 py-2 border">Sikap</th>
+              <th class="px-3 py-2 border">Administrasi</th>
+              <th class="px-3 py-2 border">Hasil</th>
+              <th class="px-3 py-2 border">Intervensi</th>
+              <th class="px-3 py-2 border">Tanggal & Waktu</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if data %} {% for row in data %}
+            <tr class="text-center hover:bg-gray-50">
+              <td class="border px-2 py-1">{{ loop.index }}</td>
+              <td class="border px-2 py-1">{{ row.rata }}</td>
+              <td class="border px-2 py-1">{{ row.ukk }}</td>
+              <td class="border px-2 py-1">{{ row.prakerin }}</td>
+              <td class="border px-2 py-1">{{ row.kehadiran }}</td>
+              <td class="border px-2 py-1">{{ row.sikap }}</td>
+              <td class="border px-2 py-1">
+                {{ 'Lengkap' if row.admin == 1 else 'Belum Lengkap' }}
+              </td>
+              <td
+                class="border px-2 py-1 font-semibold {% if row.hasil == 1 %}text-green-600{% else %}text-red-600{% endif %}"
+              >
+                {{ 'Lulus' if row.hasil == 1 else 'Tidak Lulus' }}
+              </td>
+              <td class="border px-2 py-1 text-left">{{ row.intervensi }}</td>
+              <td class="border px-2 py-1">{{ row.waktu }}</td>
+            </tr>
+            {% endfor %} {% else %}
+            <tr>
+              <td colspan="10" class="text-center py-6 text-gray-500">
+                Belum ada data hasil prediksi
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TOMBOL CETAK (ADMIN ONLY) -->
+      {% if role == "admin" %}
+      <div class="flex justify-end mt-6">
+        <a
+          href="/cetak-hasil-prediksi"
+          class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition"
+          >Cetak PDF</a
+        >
+      </div>
+      {% endif %}
+    </main>
+
+    <!-- FOOTER -->
+    <footer
+      class="bg-white text-center text-sm text-gray-500 py-4 border-t mt-auto"
+    >
+      By Alhadi Yunasfi © 2026 Sistem Prediksi Kelulusan SMK
+    </footer>
+
+    <!-- SCRIPT -->
+    <script>
+      function openLogoutModal() {
+        const modal = document.getElementById("logoutModal");
+        const box = document.getElementById("logoutBox");
+        modal.classList.remove("hidden");
+        setTimeout(() => {
+          box.classList.remove("scale-90", "opacity-0");
+          box.classList.add("scale-100", "opacity-100");
+        }, 10);
+      }
+
+      function closeLogoutModal() {
+        const modal = document.getElementById("logoutModal");
+        const box = document.getElementById("logoutBox");
+        box.classList.add("scale-90", "opacity-0");
+        box.classList.remove("scale-100", "opacity-100");
+        setTimeout(() => modal.classList.add("hidden"), 300);
+      }
+    </script>
+  </body>
+</html>
