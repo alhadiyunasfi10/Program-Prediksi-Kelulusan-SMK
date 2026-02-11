@@ -579,8 +579,14 @@ def cetak_hasil_prediksi():
     from flask import send_file
     import os
 
+    # ======================
+    # LOAD DATA
+    # ======================
     df = pd.read_csv("riwayat_prediksi.csv")
 
+    # ======================
+    # BUFFER (INI YANG PENTING)
+    # ======================
     buffer = BytesIO()
 
     doc = SimpleDocTemplate(
@@ -623,57 +629,19 @@ def cetak_hasil_prediksi():
 
     elements = []
 
+    # ======================
+    # DATA DINAMIS
+    # ======================
     tanggal_cetak = datetime.now().strftime("%d %B %Y")
     nama_admin = session.get("user", "Admin")
     nomor_surat = "421.5/001/SMK/II/2026"
+
     nama_kepsek = "Antoni, M.Pd.T"
     nip_kepsek = "19710408 199512 1 001"
 
     # ======================
-    # KOP SURAT
+    # JUDUL
     # ======================
-    logo_path = "static/images/logo_sekolah.png"
-    logo = Image(logo_path, 60, 60) if os.path.exists(logo_path) else ""
-
-    kop = Table([
-        [
-            logo,
-            Paragraph(
-                """
-                <b>SMK NEGERI 1 GUGUAK</b><br/>
-                Guguak VIII Koto, Kec. Guguak, Kabupaten Lima Puluh Kota, Sumatera Barat 26253<br/>
-                Telp. (021) 12345678 | Email: info@smk1guguak.sch.id
-                """,
-                center_small
-            )
-        ]
-    ], colWidths=[70, 650])
-
-    kop.setStyle(TableStyle([
-        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-        ("LEFTPADDING", (0,0), (-1,-1), 0),
-        ("RIGHTPADDING", (0,0), (-1,-1), 0),
-    ]))
-
-    elements.append(kop)
-
-    elements.append(
-        Table(
-            [[""]],
-            colWidths=[720],
-            rowHeights=[3],
-            style=TableStyle([
-                ("LINEABOVE", (0,0), (-1,-1), 0.8, colors.black),
-                ("LINEBELOW", (0,0), (-1,-1), 2, colors.black),
-            ])
-        )
-    )
-
-    elements.append(Spacer(1, 10))
-
-    elements.append(Paragraph(f"Nomor : {nomor_surat}", right_style))
-    elements.append(Spacer(1, 15))
-
     elements.append(
         Paragraph("LAPORAN HASIL PREDIKSI KELULUSAN SISWA SMK", title_style)
     )
@@ -719,29 +687,8 @@ def cetak_hasil_prediksi():
     elements.append(table)
     elements.append(Spacer(1, 30))
 
-    # ======================
-    # TANDA TANGAN
-    # ======================
-    ttd = Table([
-        [
-            "",
-            Paragraph(
-                f"""
-                {tanggal_cetak}<br/><br/>
-                Kepala Sekolah<br/><br/><br/><br/>
-                <b>{nama_kepsek}</b><br/>
-                NIP. {nip_kepsek}
-                """,
-                center_small
-            )
-        ]
-    ], colWidths=[500, 220])
-
-    elements.append(ttd)
-    elements.append(Spacer(1, 10))
-
     elements.append(
-        Paragraph(f"Dicetak oleh: {nama_admin}", styles["Normal"])
+        Paragraph(f"Dicetak oleh: {nama_admin} - {tanggal_cetak}", styles["Normal"])
     )
 
     doc.build(elements)
@@ -775,5 +722,6 @@ import os
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
