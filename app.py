@@ -575,32 +575,22 @@ def cetak_hasil_prediksi():
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT
     from reportlab.lib import colors
     from datetime import datetime
+    from io import BytesIO
+    from flask import send_file
     import os
 
     # ======================
-    # FILE
+    # LOAD DATA
     # ======================
-    file_csv = "riwayat_prediksi.csv"
-    file_pdf = "static/hasil_prediksi.pdf"
-    logo_path = "static/images/logo_sekolah.png"
-
-    df = pd.read_csv(file_csv)
+    df = pd.read_csv("riwayat_prediksi.csv")
 
     # ======================
-    # DATA DINAMIS
+    # BUFFER (INI YANG PENTING)
     # ======================
-    tanggal_cetak = datetime.now().strftime("%d %B %Y")
-    nama_admin = session.get("user", "Admin")
-    nomor_surat = "421.5/001/SMK/II/2026"
+    buffer = BytesIO()
 
-    nama_kepsek = "Antoni, M.Pd.T"
-    nip_kepsek = "19710408 199512 1 001"
-
-    # ======================
-    # DOKUMEN
-    # ======================
     doc = SimpleDocTemplate(
-        file_pdf,
+        buffer,
         pagesize=landscape(A4),
         rightMargin=40,
         leftMargin=30,
@@ -618,12 +608,11 @@ def cetak_hasil_prediksi():
     )
 
     center_small = ParagraphStyle(
-    "CenterSmall",
-    fontSize=11,      
-    leading=14,         
-    alignment=TA_CENTER
+        "CenterSmall",
+        fontSize=11,
+        leading=14,
+        alignment=TA_CENTER
     )
-
 
     right_style = ParagraphStyle(
         "RightStyle",
@@ -641,58 +630,14 @@ def cetak_hasil_prediksi():
     elements = []
 
     # ======================
-    # KOP SURAT
+    # DATA DINAMIS
     # ======================
-    logo = Image(logo_path, 60, 60) if os.path.exists(logo_path) else ""
+    tanggal_cetak = datetime.now().strftime("%d %B %Y")
+    nama_admin = session.get("user", "Admin")
+    nomor_surat = "421.5/001/SMK/II/2026"
 
-    kop = Table([
-        [
-            logo,
-            Paragraph(
-                """
-                <b>SMK NEGERI 1 GUGUAK</b><br/>
-                Guguak VIII Koto, Kec. Guguak, Kabupaten Lima Puluh Kota, Sumatera Barat 26253<br/>
-                Telp. (021) 12345678 | Email: info@smk1guguak.sch.id
-                """,
-                center_small
-            )
-
-        ]
-    ], colWidths=[70, 650])
-    rowHeights=[30, 28]
-
-    kop.setStyle(TableStyle([
-        ("TOPPADDING", (0,0), (-1,-1), 0),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 0),
-        ("LEFTPADDING", (0,0), (-1,-1), 0),
-        ("RIGHTPADDING", (0,0), (-1,-1), 0),
-        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-    ]))
-
-
-    elements.append(kop)
-    elements.append(
-    Table(
-        [[""]],
-        colWidths=[720],
-        rowHeights=[3],  # tinggi baris kecil → garis nempel
-        style=TableStyle([
-            ("LINEABOVE", (0,0), (-1,-1), 0.8, colors.black),
-            ("LINEBELOW", (0,0), (-1,-1), 2.2, colors.black),
-        ])
-    )
-)
-
-    elements.append(Spacer(1, 10))
-
-    # ======================
-    # NOMOR SURAT
-    # ======================
-    elements.append(
-        Paragraph(f"Nomor : {nomor_surat}", right_style)
-    )
-
-    elements.append(Spacer(1, 10))
+    nama_kepsek = "Antoni, M.Pd.T"
+    nip_kepsek = "19710408 199512 1 001"
 
     # ======================
     # JUDUL
@@ -701,10 +646,10 @@ def cetak_hasil_prediksi():
         Paragraph("LAPORAN HASIL PREDIKSI KELULUSAN SISWA SMK", title_style)
     )
 
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 20))
 
     # ======================
-    # TABEL DATA
+    # TABEL
     # ======================
     table_data = [[
         "No", "Rata-rata", "UKK", "Prakerin",
@@ -740,39 +685,23 @@ def cetak_hasil_prediksi():
     ]))
 
     elements.append(table)
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 30))
 
-    # ======================
-    # TANDA TANGAN
-    # ======================
-    ttd = Table([
-        [
-            "",
-            Paragraph(
-                f"""
-                {tanggal_cetak}<br/><br/>
-                Kepala Sekolah<br/><br/><br/><br/>
-                <b>{nama_kepsek}</b><br/>
-                NIP. {nip_kepsek}
-                """,
-                center_small
-            )
-        ]
-    ], colWidths=[500, 220])
-
-    elements.append(ttd)
-
-    # ======================
-    # FOOTNOTE
-    # ======================
-    elements.append(Spacer(1, 10))
     elements.append(
-        Paragraph(f"Dicetak oleh: {nama_admin}", styles["Normal"])
+        Paragraph(f"Dicetak oleh: {nama_admin} - {tanggal_cetak}", styles["Normal"])
     )
 
     doc.build(elements)
 
-    return redirect(url_for("static", filename="hasil_prediksi.pdf"))
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="hasil_prediksi.pdf",
+        mimetype="application/pdf"
+    )
+
 
 # ======================
 # LOGOUT
@@ -792,3 +721,4 @@ import os
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
