@@ -110,21 +110,13 @@
     <!-- FLASH MESSAGES -->
     {% with messages = get_flashed_messages(with_categories=true) %} {% if
     messages %}
-    <div class="fixed top-6 right-6 z-50 space-y-2">
+    <div id="flashContainer" class="fixed top-6 right-6 z-50 space-y-3">
       {% for category, message in messages %}
       <div
-        class="px-4 py-2 rounded-lg shadow-lg {% if category == 'success' %}bg-green-500 text-white{% endif %} {% if category == 'warning' %}bg-yellow-400 text-black{% endif %} {% if category == 'danger' %}bg-red-500 text-white{% endif %} transition-opacity duration-300 opacity-100"
-        id="flashMessage{{ loop.index }}"
+        class="flash-message px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all duration-500 transform translate-x-10 opacity-0 {% if category == 'success' %}bg-green-500 text-white{% endif %} {% if category == 'warning' %}bg-yellow-400 text-black{% endif %} {% if category == 'danger' %}bg-red-500 text-white{% endif %}"
       >
         {{ message }}
       </div>
-
-      <script>
-        setTimeout(() => {
-          const el = document.getElementById("flashMessage{{ loop.index }}");
-          if (el) el.classList.add("opacity-0");
-        }, 3000);
-      </script>
       {% endfor %}
     </div>
     {% endif %} {% endwith %}
@@ -239,6 +231,26 @@
         box.classList.remove("scale-100", "opacity-100");
         setTimeout(() => modal.classList.add("hidden"), 300);
       }
+      document.addEventListener("DOMContentLoaded", () => {
+        const messages = document.querySelectorAll(".flash-message");
+
+        messages.forEach((msg, index) => {
+          // Animasi masuk
+          setTimeout(() => {
+            msg.classList.remove("translate-x-10", "opacity-0");
+            msg.classList.add("translate-x-0", "opacity-100");
+          }, 100 * index);
+
+          // Hilang otomatis
+          setTimeout(() => {
+            msg.classList.add("opacity-0", "translate-x-10");
+
+            setTimeout(() => {
+              msg.remove();
+            }, 500);
+          }, 3000);
+        });
+      });
 
       // NOTIF UPLOAD SUKSES
       const urlParams = new URLSearchParams(window.location.search);
