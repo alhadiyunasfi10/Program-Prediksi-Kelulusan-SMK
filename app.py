@@ -558,7 +558,24 @@ def hasil_prediksi():
         user=session.get("user", "Guest")
     )
 
+# ======================
+# Hapus Hasil
+# ======================
+@app.route("/hapus-hasil-prediksi", methods=["POST"])
+def hapus_hasil_prediksi():
+    if "user" not in session or session["role"] != "admin":
+        return redirect(url_for("login"))
 
+    try:
+        import os
+        if os.path.exists("riwayat_prediksi.csv"):
+            os.remove("riwayat_prediksi.csv")
+
+        flash("Semua hasil prediksi berhasil dihapus.", "success")
+    except Exception as e:
+        flash(f"Gagal menghapus data: {str(e)}", "danger")
+
+    return redirect(url_for("hasil_prediksi"))
 
 @app.route("/cetak-hasil-prediksi")
 def cetak_hasil_prediksi():
@@ -769,3 +786,4 @@ def logout():
 # ======================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
