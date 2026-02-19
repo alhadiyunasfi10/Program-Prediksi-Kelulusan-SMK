@@ -8,6 +8,8 @@ matplotlib.use("Agg")
 import os
 import datetime
 import csv 
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # ======================
 # INISIALISASI FLASK
@@ -163,7 +165,7 @@ def upload_dataset():
         path = "dataset_upload.csv"
         file.save(path)
 
-        global model, X_test, y_test
+        global model, X_train, X_test, y_train, y_test, oob_score
 
         # ======================
         # LOAD DATASET
@@ -242,11 +244,17 @@ def upload_dataset():
         # TRAINING MODEL
         # ======================
         model = RandomForestClassifier(
-            n_estimators=100,
-            random_state=42,
-            class_weight="balanced"
+        n_estimators=100,
+        max_depth=10,
+        min_samples_split=5,
+        min_samples_leaf=2,
+        bootstrap=True,
+        oob_score=True,
+        random_state=42,
+        class_weight="balanced"
         )
         model.fit(X_train, y_train)
+        oob_score = model.oob_score_
 
         # ======================
         # SIMPAN MODEL
@@ -274,6 +282,7 @@ def upload_dataset():
 # ======================
 @app.route("/analisis")
 def analisis():
+    global model, X_train, X_test, y_train, y_test, oob_score
     if "user" not in session or session["role"] != "admin":
         return redirect(url_for("login"))
 
@@ -286,6 +295,7 @@ def analisis():
     # =========================
     df_awal = pd.read_csv("dataset_upload.csv")
     jumlah_awal = df_awal.shape[0]
+    contoh_data_awal = df_awal.head(5).to_dict(orient="records")
 
     # =========================
     # REPLIKASI PREPROCESSING
@@ -327,27 +337,119 @@ def analisis():
     contoh_data = df.head(5).to_dict(orient="records")
 
     # =========================
+    # SELEKSI FITUR & TARGET
+    # =========================
+    X = df[
+        [
+            "RATA-RATA",
+            "NILAI UKK",
+            "PRAKERIN",
+            "Persentase_Kehadiran",
+            "Sikap",
+            "Status_Pembayaran_Administrasi",
+        ]
+    ]
+
+    y = df["Status_Kelulusan"]
+
+    # Contoh data fitur & target
+    contoh_X = X.head(5).to_dict(orient="records")
+    contoh_y = y.head(5).tolist()
+
+    jumlah_fitur = X.shape[1]
+    jumlah_data = X.shape[0]
+
+    # =========================
+    # INFORMASI DATA SPLIT
+    # =========================
+    jumlah_train = len(X_train)
+    jumlah_test = len(X_test)
+
+    persen_train = round((jumlah_train / (jumlah_train + jumlah_test)) * 100, 2)
+    persen_test = round((jumlah_test / (jumlah_train + jumlah_test)) * 100, 2)
+
+    distribusi_train = y_train.value_counts().to_dict()
+    distribusi_test = y_test.value_counts().to_dict()
+
+    train_accuracy = model.score(X_train, y_train)
+    test_accuracy = model.score(X_test, y_test)
+
+    selisih_akurasi = round(train_accuracy - test_accuracy, 4)
+
+    #Konfigurasi Parameter
+    parameter_model = model.get_params()
+
+    # Matrix korelasi fitur terhadap target
+    plt.figure(figsize=(6,5))
+    corr = df.corr()["Status_Kelulusan"].drop("Status_Kelulusan")
+    sns.heatmap(
+        corr.to_frame(),
+        annot=True,
+        cmap="coolwarm",
+        fmt=".2f"
+    )
+
+    plt.title("Korelasi Fitur Terhadap Status Kelulusan")
+
+    plt.tight_layout()
+    plt.savefig("static/korelasi_kelulusan.png")
+    plt.close()
+
+    # =========================
     # EVALUASI MODEL
     # =========================
     y_pred = model.predict(X_test)
+    
+    estimators_range = [10, 20, 50, 100, 150, 200]
+    oob_scores = []
+
+    for n in estimators_range:
+        model_temp = RandomForestClassifier(
+            n_estimators=n,
+            bootstrap=True,
+            oob_score=True,
+            random_state=42,
+            class_weight="balanced"
+        )
+        model_temp.fit(X_train, y_train)
+        oob_scores.append(model_temp.oob_score_)
+
+    plt.figure()
+    plt.plot(estimators_range, oob_scores)
+    plt.xlabel("Jumlah Pohon (n_estimators)")
+    plt.ylabel("OOB Score")
+    plt.title("Pengaruh Jumlah Pohon terhadap OOB Score")
+    plt.tight_layout()
+    plt.savefig("static/grafik_jumlah_pohon.png")
+    plt.close()
 
     # ======================
     # DATASET HASIL PREDIKSI RANDOM FOREST
     # ======================
 
     hasil_rf = X_test.copy()
-
     hasil_rf["Aktual"] = y_test.values
     hasil_rf["Prediksi"] = y_pred
-
-    # Simpan ke CSV
     hasil_rf.to_csv("dataset_hasil_random_forest.csv", index=False)
-
 
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, zero_division=0)
     recall = recall_score(y_test, y_pred, zero_division=0)
     f1 = f1_score(y_test, y_pred, zero_division=0)
+
+    # =========================
+    # CEK OVERFITTING
+    # =========================
+    train_accuracy = model.score(X_train, y_train)
+    test_accuracy = model.score(X_test, y_test)
+
+    selisih_akurasi = round(train_accuracy - test_accuracy, 4)
+
+    if selisih_akurasi > 0.1:
+        status_model = "Model mengalami overfitting"
+    else:
+        status_model = "Model cukup stabil"
+
 
     # =========================
     # FEATURE IMPORTANCE (FIX FINAL)
@@ -372,10 +474,69 @@ def analisis():
         }
         for fitur, nilai in feature_sorted
     ]
-
+    
     # Untuk grafik (jika dipakai di template)
     fitur_grafik = [f for f, _ in feature_sorted]
     nilai_grafik = [round(v * 100, 2) for _, v in feature_sorted]
+
+    # =========================
+    # RANDOM FEATURE SELECTION
+    # =========================
+    max_features = model.max_features
+
+    if max_features is None:
+        max_features = "Semua Fitur"
+
+    jumlah_fitur = X.shape[1]
+
+    if max_features == "sqrt":
+        fitur_dipilih = int(jumlah_fitur ** 0.5)
+    elif max_features == "log2":
+        import math
+        fitur_dipilih = int(math.log2(jumlah_fitur))
+    elif isinstance(max_features, int):
+        fitur_dipilih = max_features
+    else:
+        fitur_dipilih = jumlah_fitur
+
+    # =========================
+    # VISUALISASI POHON - FULL DEPTH
+    # =========================
+    from sklearn.tree import plot_tree
+
+    tree = model.estimators_[0]
+
+    plt.figure(figsize=(24, 12))
+    plot_tree(
+        tree,
+        feature_names=model.feature_names_in_,
+        class_names=["Tidak Lulus", "Lulus"],
+        filled=True,
+        rounded=True,
+        max_depth=3,   # 🔥 dibatasi
+        fontsize=11
+    )
+    plt.title("Decision Tree (3 Level Pertama)", fontsize=16)
+    plt.tight_layout()
+    plt.savefig("static/contoh_pohon_3level.png", dpi=300)
+    plt.close()
+
+    # =========================
+    # VISUALISASI POHON - 3 LEVEL
+    # =========================
+    plt.figure(figsize=(30, 15))
+    plot_tree(
+        tree,
+        feature_names=model.feature_names_in_,
+        class_names=["Tidak Lulus", "Lulus"],
+        filled=True,
+        rounded=True,
+        fontsize=10
+    )
+    plt.title("Decision Tree (Full Depth)", fontsize=16)
+    plt.tight_layout()
+    plt.savefig("static/contoh_pohon_full.png", dpi=300)
+    plt.close()
 
     # =========================
     # RENDER
@@ -385,16 +546,46 @@ def analisis():
         user=session["user"],
         role=session["role"],
 
-        # Evaluasi model
-        accuracy=accuracy,
-        precision=precision,
-        recall=recall,
-        f1=f1,
+        # Data mentah
+        contoh_data_awal=contoh_data_awal,
+
+        # Seleksi fitur
+        contoh_X=contoh_X,
+        contoh_y=contoh_y,
+        jumlah_fitur=jumlah_fitur,
+        jumlah_data=jumlah_data,
 
         # Preprocessing
         jumlah_awal=jumlah_awal,
         jumlah_bersih=jumlah_bersih,
         contoh_data=contoh_data,
+
+        jumlah_train=jumlah_train,
+        jumlah_test=jumlah_test,
+        persen_train=persen_train,
+        persen_test=persen_test,
+        distribusi_train=distribusi_train,
+        distribusi_test=distribusi_test,
+
+        train_accuracy=round(train_accuracy,4),
+        test_accuracy=round(test_accuracy,4),
+        selisih_akurasi=selisih_akurasi,
+        status_model=status_model,
+
+        #Konfigurasi Parameter
+        parameter_model=parameter_model,
+
+        #Boostrap OOB Score
+        oob_score=round(oob_score,4),
+
+        max_features=max_features,
+        fitur_dipilih=fitur_dipilih,
+
+        # Evaluasi model
+        accuracy=accuracy,
+        precision=precision,
+        recall=recall,
+        f1=f1,
 
         # Feature importance
         feature_data=feature_data,
@@ -558,24 +749,7 @@ def hasil_prediksi():
         user=session.get("user", "Guest")
     )
 
-# ======================
-# Hapus Hasil
-# ======================
-@app.route("/hapus-hasil-prediksi", methods=["POST"])
-def hapus_hasil_prediksi():
-    if "user" not in session or session["role"] != "admin":
-        return redirect(url_for("login"))
 
-    try:
-        import os
-        if os.path.exists("riwayat_prediksi.csv"):
-            os.remove("riwayat_prediksi.csv")
-
-        flash("Semua hasil prediksi berhasil dihapus.", "success")
-    except Exception as e:
-        flash(f"Gagal menghapus data: {str(e)}", "danger")
-
-    return redirect(url_for("hasil_prediksi"))
 
 @app.route("/cetak-hasil-prediksi")
 def cetak_hasil_prediksi():
@@ -592,16 +766,32 @@ def cetak_hasil_prediksi():
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT
     from reportlab.lib import colors
     from datetime import datetime
-    from io import BytesIO
-    from flask import send_file
     import os
 
-    df = pd.read_csv("riwayat_prediksi.csv")
+    # ======================
+    # FILE
+    # ======================
+    file_csv = "riwayat_prediksi.csv"
+    file_pdf = "static/hasil_prediksi.pdf"
+    logo_path = "static/images/logo_sekolah.png"
 
-    buffer = BytesIO()
+    df = pd.read_csv(file_csv)
 
+    # ======================
+    # DATA DINAMIS
+    # ======================
+    tanggal_cetak = datetime.now().strftime("%d %B %Y")
+    nama_admin = session.get("user", "Admin")
+    nomor_surat = "421.5/001/SMK/II/2026"
+
+    nama_kepsek = "Antoni, M.Pd.T"
+    nip_kepsek = "19710408 199512 1 001"
+
+    # ======================
+    # DOKUMEN
+    # ======================
     doc = SimpleDocTemplate(
-        buffer,
+        file_pdf,
         pagesize=landscape(A4),
         rightMargin=40,
         leftMargin=30,
@@ -619,11 +809,12 @@ def cetak_hasil_prediksi():
     )
 
     center_small = ParagraphStyle(
-        "CenterSmall",
-        fontSize=11,
-        leading=14,
-        alignment=TA_CENTER
+    "CenterSmall",
+    fontSize=11,      
+    leading=14,         
+    alignment=TA_CENTER
     )
+
 
     right_style = ParagraphStyle(
         "RightStyle",
@@ -640,16 +831,9 @@ def cetak_hasil_prediksi():
 
     elements = []
 
-    tanggal_cetak = datetime.now().strftime("%d %B %Y")
-    nama_admin = session.get("user", "Admin")
-    nomor_surat = "421.5/001/SMK/II/2026"
-    nama_kepsek = "Antoni, M.Pd.T"
-    nip_kepsek = "19710408 199512 1 001"
-
     # ======================
     # KOP SURAT
     # ======================
-    logo_path = "static/images/logo_sekolah.png"
     logo = Image(logo_path, 60, 60) if os.path.exists(logo_path) else ""
 
     kop = Table([
@@ -663,42 +847,55 @@ def cetak_hasil_prediksi():
                 """,
                 center_small
             )
+
         ]
     ], colWidths=[70, 650])
+    rowHeights=[30, 28]
 
     kop.setStyle(TableStyle([
-        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("TOPPADDING", (0,0), (-1,-1), 0),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 0),
         ("LEFTPADDING", (0,0), (-1,-1), 0),
         ("RIGHTPADDING", (0,0), (-1,-1), 0),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
     ]))
 
-    elements.append(kop)
 
+    elements.append(kop)
     elements.append(
-        Table(
-            [[""]],
-            colWidths=[720],
-            rowHeights=[3],
-            style=TableStyle([
-                ("LINEABOVE", (0,0), (-1,-1), 0.8, colors.black),
-                ("LINEBELOW", (0,0), (-1,-1), 2, colors.black),
-            ])
-        )
+    Table(
+        [[""]],
+        colWidths=[720],
+        rowHeights=[3],  # tinggi baris kecil → garis nempel
+        style=TableStyle([
+            ("LINEABOVE", (0,0), (-1,-1), 0.8, colors.black),
+            ("LINEBELOW", (0,0), (-1,-1), 2.2, colors.black),
+        ])
+    )
+)
+
+    elements.append(Spacer(1, 10))
+
+    # ======================
+    # NOMOR SURAT
+    # ======================
+    elements.append(
+        Paragraph(f"Nomor : {nomor_surat}", right_style)
     )
 
     elements.append(Spacer(1, 10))
 
-    elements.append(Paragraph(f"Nomor : {nomor_surat}", right_style))
-    elements.append(Spacer(1, 15))
-
+    # ======================
+    # JUDUL
+    # ======================
     elements.append(
         Paragraph("LAPORAN HASIL PREDIKSI KELULUSAN SISWA SMK", title_style)
     )
 
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 12))
 
     # ======================
-    # TABEL
+    # TABEL DATA
     # ======================
     table_data = [[
         "No", "Rata-rata", "UKK", "Prakerin",
@@ -734,7 +931,7 @@ def cetak_hasil_prediksi():
     ]))
 
     elements.append(table)
-    elements.append(Spacer(1, 30))
+    elements.append(Spacer(1, 20))
 
     # ======================
     # TANDA TANGAN
@@ -755,22 +952,37 @@ def cetak_hasil_prediksi():
     ], colWidths=[500, 220])
 
     elements.append(ttd)
-    elements.append(Spacer(1, 10))
 
+    # ======================
+    # FOOTNOTE
+    # ======================
+    elements.append(Spacer(1, 10))
     elements.append(
         Paragraph(f"Dicetak oleh: {nama_admin}", styles["Normal"])
     )
 
     doc.build(elements)
 
-    buffer.seek(0)
+    return redirect(url_for("static", filename="hasil_prediksi.pdf"))
 
-    return send_file(
-        buffer,
-        as_attachment=True,
-        download_name="hasil_prediksi.pdf",
-        mimetype="application/pdf"
-    )
+# ======================
+# Hapus Hasil
+# ======================
+@app.route("/hapus-hasil-prediksi", methods=["POST"])
+def hapus_hasil_prediksi():
+    if "user" not in session or session["role"] != "admin":
+        return redirect(url_for("login"))
+
+    try:
+        import os
+        if os.path.exists("riwayat_prediksi.csv"):
+            os.remove("riwayat_prediksi.csv")
+
+        flash("Semua hasil prediksi berhasil dihapus.", "success")
+    except Exception as e:
+        flash(f"Gagal menghapus data: {str(e)}", "danger")
+
+    return redirect(url_for("hasil_prediksi"))
 
 
 # ======================
@@ -780,10 +992,10 @@ def cetak_hasil_prediksi():
 def logout():
     session.clear()
     return redirect(url_for("login"))
-
 # ======================
 # RUN (LOCAL ONLY)
 # ======================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
 
