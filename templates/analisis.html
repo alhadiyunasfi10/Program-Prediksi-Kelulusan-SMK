@@ -115,11 +115,49 @@
         </nav>
       </div>
     </header>
+    <!-- DATASET AWAL -->
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-white rounded-xl shadow p-8 mb-12">
+        <h3 class="text-xl font-semibold text-center mb-4 text-gray-700">
+          Data Mentah (Dataset yang Baru Diupload)
+        </h3>
+
+        <p class="text-sm text-gray-500 text-center mb-6">
+          Berikut adalah contoh data sebelum dilakukan proses preprocessing.
+        </p>
+
+        {% if contoh_data_awal %}
+        <div class="overflow-x-auto">
+          <table class="w-full border text-sm">
+            <thead class="bg-gray-100">
+              <tr>
+                {% for key in contoh_data_awal[0].keys() %}
+                <th class="border px-3 py-2">{{ key }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in contoh_data_awal %}
+              <tr class="hover:bg-blue-50 text-center">
+                {% for value in row.values() %}
+                <td class="border px-3 py-2">{{ value }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">Data belum tersedia.</p>
+        {% endif %}
+      </div>
+    </div>
+
     <!-- PREPROCESSING SUMMARY -->
     <div class="max-w-6xl mx-auto px-6">
       <div class="bg-white rounded-xl shadow p-8 mb-12">
         <h3 class="text-xl font-semibold text-center mb-4 text-gray-700">
-          Hasil Preprocessing Data
+          Hasil Preprocessing Data (Cleaning dan Encoding)
         </h3>
 
         <p class="text-sm text-gray-500 text-center mb-6">
@@ -176,13 +214,10 @@
                 </td>
                 <td class="border px-3 py-2">{{ row["Sikap"] }}</td>
                 <td class="border px-3 py-2">
-                  {{ "Lunas" if row["Status_Pembayaran_Administrasi"] == 1 else
-                  "Belum" }}
+                  {{ row["Status_Pembayaran_Administrasi"] }}
                 </td>
-                <td class="border px-3 py-2 font-semibold">
-                  {{ "Lulus" if row["Status_Kelulusan"] == 1 else "Tidak Lulus"
-                  }}
-                </td>
+
+                <td class="border px-3 py-2">{{ row["Status_Kelulusan"] }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -201,8 +236,249 @@
       </div>
     </div>
 
+    <!-- SELEKSI FITUR DAN TARGET -->
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-white rounded-xl shadow p-8 mb-12">
+        <h3 class="text-xl font-semibold text-center mb-4 text-gray-700">
+          Seleksi Fitur dan Pemisahan Target
+        </h3>
+
+        <p class="text-sm text-gray-500 text-center mb-6">
+          Pada tahap ini dilakukan pemisahan antara variabel independen (fitur)
+          dan variabel dependen (target).
+        </p>
+
+        <!-- RINGKASAN -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="bg-blue-50 rounded-lg p-5 text-center">
+            <p class="text-sm text-gray-600">Jumlah Data</p>
+            <p class="text-2xl font-bold text-blue-700">
+              {{ jumlah_data }} Data
+            </p>
+          </div>
+
+          <div class="bg-green-50 rounded-lg p-5 text-center">
+            <p class="text-sm text-gray-600">Jumlah Fitur</p>
+            <p class="text-2xl font-bold text-green-700">
+              {{ jumlah_fitur }} Fitur
+            </p>
+          </div>
+        </div>
+
+        <!-- DAFTAR FITUR -->
+        <div class="mb-6">
+          <h4 class="font-semibold text-gray-700 mb-2">
+            Fitur yang Digunakan:
+          </h4>
+          <ul class="list-disc list-inside text-sm text-gray-600">
+            <li>RATA-RATA</li>
+            <li>NILAI UKK</li>
+            <li>PRAKERIN</li>
+            <li>Persentase_Kehadiran</li>
+            <li>Sikap</li>
+            <li>Status_Pembayaran_Administrasi</li>
+          </ul>
+        </div>
+
+        <!-- CONTOH DATA FITUR -->
+        <h4 class="font-semibold text-gray-700 mb-3">Contoh Data Fitur (X)</h4>
+
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full border text-sm">
+            <thead class="bg-gray-100">
+              <tr>
+                {% for key in contoh_X[0].keys() %}
+                <th class="border px-3 py-2">{{ key }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in contoh_X %}
+              <tr class="hover:bg-blue-50 text-center">
+                {% for value in row.values() %}
+                <td class="border px-3 py-2">{{ value }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TARGET -->
+        <h4 class="font-semibold text-gray-700 mb-3">Contoh Target (y)</h4>
+
+        <div class="flex gap-2 flex-wrap">
+          {% for value in contoh_y %}
+          <span
+            class="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm"
+          >
+            {{ value }}
+          </span>
+          {% endfor %}
+        </div>
+
+        <p class="text-xs text-gray-500 mt-4 italic">
+          Target berupa variabel Status_Kelulusan yang telah diencoding (0 =
+          Tidak Lulus, 1 = Lulus).
+        </p>
+      </div>
+    </div>
+
+    <!-- Split Data -->
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-white rounded-xl shadow p-8 mb-12">
+        <h3 class="font-bold text-lg mb-2">Data Splitting</h3>
+        <p>Data Training: {{ jumlah_train }} ({{ persen_train }}%)</p>
+        <p>Data Testing: {{ jumlah_test }} ({{ persen_test }}%)</p>
+      </div>
+    </div>
+
+    <!-- Distribusi Kelas -->
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-white rounded-xl shadow p-8 mb-12">
+        <h3 class="font-bold text-lg mb-2">Distribusi Kelas</h3>
+        <p><strong>Training:</strong> {{ distribusi_train }}</p>
+        <p><strong>Testing:</strong> {{ distribusi_test }}</p>
+      </div>
+    </div>
+
+    <!-- Konfigurasi Parameter -->
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-white rounded-xl shadow p-8 mb-12">
+        <h3 class="font-bold text-lg mb-2">
+          Konfigurasi Parameter Random Forest
+        </h3>
+        <ul>
+          <li>
+            Jumlah Pohon (n_estimators): {{ parameter_model.n_estimators }}
+          </li>
+          <li>
+            Kedalaman Maksimum (max_depth): {{ parameter_model.max_depth }}
+          </li>
+          <li>Min Samples Split: {{ parameter_model.min_samples_split }}</li>
+          <li>Min Samples Leaf: {{ parameter_model.min_samples_leaf }}</li>
+          <li>Class Weight: {{ parameter_model.class_weight }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bootstrap Sampling -->
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-white rounded-xl shadow p-8 mb-12">
+        <h3 class="font-bold text-lg mb-2">Bootstrap Sampling</h3>
+        <p>Bootstrap: Aktif</p>
+        <p>Out-of-Bag Score: {{ oob_score }}</p>
+
+        <h3 class="font-bold text-lg mt-6 mb-2">
+          Pengaruh Jumlah Pohon terhadap Performa Model
+        </h3>
+
+        <img
+          src="{{ url_for('static', filename='grafik_jumlah_pohon.png') }}"
+          class="w-full mb-4"
+        />
+
+        <!-- Tambahan Penjelasan -->
+        <div class="text-gray-700 text-justify space-y-3">
+          <p>
+            Grafik di atas menunjukkan hubungan antara jumlah pohon
+            (n_estimators) dalam algoritma Random Forest terhadap nilai
+            Out-of-Bag (OOB) Score. OOB Score digunakan sebagai estimasi
+            performa model tanpa memerlukan data validasi tambahan, karena
+            dihitung dari data bootstrap yang tidak terpilih selama proses
+            pelatihan.
+          </p>
+
+          <p>
+            Berdasarkan hasil pengujian, model menghasilkan nilai Out-of-Bag
+            Score sebesar <strong>{{ oob_score }}</strong>. Nilai ini
+            menunjukkan bahwa model memiliki tingkat akurasi sekitar {{
+            (oob_score * 100)|round(2) }}% terhadap data pelatihan yang tidak
+            terambil dalam proses bootstrap, sehingga dapat dikatakan model
+            memiliki kemampuan generalisasi yang sangat baik.
+          </p>
+
+          <p>
+            Dari grafik terlihat bahwa peningkatan jumlah pohon memberikan
+            stabilitas performa model hingga mencapai titik konvergen. Setelah
+            jumlah pohon mencapai sekitar 100 atau lebih, nilai OOB Score
+            cenderung stabil dan tidak mengalami peningkatan yang signifikan.
+            Hal ini menunjukkan bahwa penambahan pohon dalam jumlah besar tidak
+            selalu meningkatkan performa, tetapi hanya menambah kompleksitas dan
+            waktu komputasi.
+          </p>
+
+          <p>
+            Oleh karena itu, jumlah pohon dipilih berdasarkan keseimbangan
+            antara akurasi dan efisiensi komputasi, sehingga model tetap optimal
+            tanpa mengalami pemborosan sumber daya.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Random Feature Selection -->
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-white rounded-xl shadow p-8 mb-12">
+        <h3 class="font-bold text-lg mb-2">Random Feature Selection</h3>
+
+        <p>Total Fitur Dataset: <strong>{{ jumlah_fitur }}</strong></p>
+        <p>Metode Pemilihan Fitur: <strong>{{ max_features }}</strong></p>
+        <p>
+          Jumlah Fitur yang Dipilih Setiap Split:
+          <strong>{{ fitur_dipilih }}</strong>
+        </p>
+        <div class="text-gray-700 text-justify space-y-2 mt-4">
+          <p>
+            Random Feature Selection adalah mekanisme dalam Random Forest di
+            mana setiap node hanya menggunakan sebagian fitur yang dipilih
+            secara acak untuk menentukan split terbaik.
+          </p>
+
+          <p>
+            Pada model ini digunakan metode
+            <strong>{{ max_features }}</strong>, sehingga setiap split hanya
+            mempertimbangkan <strong>{{ fitur_dipilih }}</strong> fitur dari
+            total <strong>{{ jumlah_fitur }}</strong> fitur yang tersedia.
+          </p>
+
+          <p>
+            Pendekatan ini membantu meningkatkan variasi antar pohon dan
+            mengurangi risiko overfitting.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pohon Keputusan -->
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-white rounded-xl shadow p-8 mb-12">
+        <h3 class="font-bold text-lg mb-4">
+          Visualisasi Pohon Keputusan dalam Random Forest
+        </h3>
+        <h4 class="font-semibold mb-2">Versi Ringkas (3 Level Pertama)</h4>
+        <img
+          src="{{ url_for('static', filename='contoh_pohon_3level.png') }}"
+          class="w-full"
+        />
+        <p class="text-gray-700 text-justify mt-4">
+          Visualisasi ini dibatasi hingga tiga level pertama untuk mempermudah
+          interpretasi struktur awal pembentukan keputusan.
+        </p>
+        <h4 class="font-semibold mb-2">Versi Lengkap (Full Depth)</h4>
+        <img
+          src="{{ url_for('static', filename='contoh_pohon_full.png') }}"
+          class="w-full mb-4"
+        />
+        <p class="text-gray-700 text-justify mb-6">
+          Gambar di atas menunjukkan struktur lengkap salah satu pohon dalam
+          Random Forest sesuai dengan parameter pelatihan (max_depth = 10).
+        </p>
+      </div>
+    </div>
+
     <!-- CONTENT -->
-    <main class="max-w-6xl mx-auto px-6 py-10">
+    <main class="max-w-6xl mx-auto px-6 py-2">
       <h2 class="text-2xl font-bold text-gray-700 mb-3 text-center">
         Analisis Performa Model Random Forest
       </h2>
@@ -243,14 +519,15 @@
         </div>
       </div>
 
-      <!-- BUTTON CETAK -->
-      <div class="flex justify-center gap-4 mb-10">
-        <a
-          href="/prediksi"
-          class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow transition"
-        >
-          🔮 Ke Halaman Prediksi
-        </a>
+      <!-- Overvitting Check -->
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="bg-white rounded-xl shadow p-8 mb-12">
+          <h3 class="font-bold text-lg mb-2">Analisis Overfitting</h3>
+          <p>Training Accuracy: {{ train_accuracy }}</p>
+          <p>Testing Accuracy: {{ test_accuracy }}</p>
+          <p>Selisih: {{ selisih_akurasi }}</p>
+          <p><strong>Status:</strong> {{ status_model }}</p>
+        </div>
       </div>
 
       <!-- GRAFIK -->
@@ -277,6 +554,30 @@
             *Berdasarkan data aktual, bukan hasil prediksi model
           </p>
         </div>
+      </div>
+
+      <!-- MATRIKS KORELASI -->
+      <div class="bg-white rounded-xl shadow p-8 mb-12">
+        <h3 class="text-xl font-semibold text-center mb-4 text-gray-700">
+          Matriks Korelasi Antar Variabel
+        </h3>
+
+        <p class="text-sm text-gray-500 text-center mb-6">
+          Matriks korelasi menunjukkan hubungan antar variabel numerik dalam
+          dataset setelah preprocessing.
+        </p>
+
+        <div class="flex justify-center">
+          <img
+            src="{{ url_for('static', filename='matriks_korelasi.png') }}"
+            class="rounded shadow max-w-full"
+          />
+        </div>
+
+        <p class="text-xs text-gray-500 text-center mt-4 italic">
+          *Nilai mendekati 1 menunjukkan korelasi positif kuat, mendekati -1
+          korelasi negatif kuat.
+        </p>
       </div>
 
       <!-- FEATURE IMPORTANCE -->
@@ -325,6 +626,15 @@
         {% endif %}
       </div>
     </main>
+    <!-- BUTTON -->
+    <div class="flex justify-center gap-4 mb-10 pt-3">
+      <a
+        href="/prediksi"
+        class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow transition"
+      >
+        🔮 Ke Halaman Prediksi
+      </a>
+    </div>
 
     <footer class="bg-white text-center text-sm text-gray-500 py-4 border-t">
       By Alhadi Yunasfi © 2026 Sistem Prediksi Kelulusan SMK
