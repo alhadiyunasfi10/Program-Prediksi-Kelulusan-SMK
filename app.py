@@ -380,19 +380,22 @@ def analisis():
     parameter_model = model.get_params()
 
     # Matrix korelasi fitur terhadap target
-    plt.figure(figsize=(6,5))
-    corr = df.corr()["Status_Kelulusan"].drop("Status_Kelulusan")
+    corr_matrix = df.corr()
+
+    plt.figure(figsize=(10,8))
+
     sns.heatmap(
-        corr.to_frame(),
-        annot=True,
+        corr_matrix,
+        annot=True,        # menampilkan semua nilai di setiap kotak
         cmap="coolwarm",
-        fmt=".2f"
+        fmt=".2f",         # 2 angka di belakang koma
+        linewidths=0.5     # garis antar kotak
     )
 
-    plt.title("Korelasi Fitur Terhadap Status Kelulusan")
+    plt.title("Matriks Korelasi Antar Variabel")
 
     plt.tight_layout()
-    plt.savefig("static/korelasi_kelulusan.png")
+    plt.savefig("static/matriks_korelasi.png")
     plt.close()
 
     # =========================
@@ -997,5 +1000,6 @@ def logout():
 # ======================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+
 
 
